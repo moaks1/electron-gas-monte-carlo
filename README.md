@@ -74,7 +74,7 @@ jupyter lab
 Then open:
 
 ```text
-electron_transport_control_generalized.ipynb
+electron_transport.ipynb
 ```
 
 ---
@@ -110,18 +110,18 @@ Load a single gas target:
 
 ```python
 import numpy as np
-import ehe_mc_transport_generalized as ehe
+import electron_mc_transport as emc
 
 np.random.seed(1)
 
-material = ehe.load_lxcat_material(
+material = emc.load_lxcat_material(
     "eHexsec.txt",
     material_name="helium gas",
     target_name="He",
     number_density_m3=2.5e26,
 )
 
-electron = ehe.ElectronParticle(
+electron = emc.ElectronParticle(
     energy_eV=100.0,
     material=material,
     idx=0,
@@ -140,21 +140,21 @@ print(event)
 If cross-section data are available for each gas species, the code can also model a gas mixture.
 
 ```python
-import ehe_mc_transport_generalized as ehe
+import electron_mc_transport as emc
 
 n_total = 2.5e26
 
-n2_processes = ehe.load_lxcat_table("N2_xsecs.txt", target_name="N2")
-o2_processes = ehe.load_lxcat_table("O2_xsecs.txt", target_name="O2")
-ar_processes = ehe.load_lxcat_table("Ar_xsecs.txt", target_name="Ar")
+n2_processes = emc.load_lxcat_table("N2_xsecs.txt", target_name="N2")
+o2_processes = emc.load_lxcat_table("O2_xsecs.txt", target_name="O2")
+ar_processes = emc.load_lxcat_table("Ar_xsecs.txt", target_name="Ar")
 
-air = ehe.make_gas_mixture("air", [
+air = emc.make_gas_mixture("air", [
     ["N2", 0.78 * n_total, n2_processes],
     ["O2", 0.21 * n_total, o2_processes],
     ["Ar", 0.01 * n_total, ar_processes],
 ])
 
-electron = ehe.ElectronParticle(
+electron = emc.ElectronParticle(
     energy_eV=100.0,
     material=air,
     idx=0,
