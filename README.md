@@ -31,8 +31,8 @@ A suggested layout is:
 electron-gas-monte-carlo/
 ├── README.md
 ├── requirements.txt
-├── ehe_mc_transport_generalized.py
-├── electron_transport_control_generalized.ipynb
+├── electron_mc_transport.py
+├── electron_transport.ipynb
 ├── figures/
 │   └── example_trajectory.png
 └── data/
