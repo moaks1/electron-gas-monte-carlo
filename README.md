@@ -1,45 +1,54 @@
 # Electron Gas Monte Carlo
 
-A simple Monte Carlo electron-transport code for gas targets using LXCat-style collision cross-section data.
+A small, readable **3D null-collision Monte Carlo electron transport code** for gas targets using LXCat-style electron collision cross-section data.
 
-This project tracks electrons through a target gas or gas mixture. It samples collision times, chooses interaction channels from tabulated cross sections, updates particle energy and direction, and can create secondary electrons from ionization events.
+The code follows electron histories through a gas medium, samples candidate collision events, accepts physical collision channels based on tabulated cross sections, and creates secondary electrons during ionization events. It is intended as an educational/research prototype rather than a production electron transport code.
 
-The code is intentionally written in a basic, readable style so the physics and Monte Carlo logic are easy to follow.
-
----
-
-## Features
-
-- Electron transport through a gas target
-- LXCat-style cross-section loading
-- Elastic scattering
-- Excitation energy loss
-- Ionization with secondary-electron creation
-- Attachment support, if attachment data are provided
-- Pure gases and gas mixtures
-- 3D particle histories
-- Trajectory plotting from a Jupyter notebook
-- Reproducible runs with a random seed
+![Example electron trajectory in helium gas](electron_trajectory.png)
 
 ---
 
-## Repository structure
+## What this code does
 
-A suggested layout is:
+This repository models electron motion in gas targets using tabulated electron-collision cross sections. The current example uses helium gas, but the code is written so other gases or gas mixtures can be used if compatible cross-section data are available.
+
+The simulation supports:
+
+- 3D electron motion
+- null-collision Monte Carlo sampling
+- elastic scattering
+- excitation energy loss
+- ionization and secondary-electron creation
+- attachment, if attachment data are provided
+- pure gases and simple gas mixtures
+- trajectory histories with time, position, energy, and event type
+- 2D trajectory plotting from a Jupyter notebook
+
+The plotted figure is a 2D `x-y` projection of a 3D particle history. The code still stores and updates `x`, `y`, and `z`.
+
+---
+
+## Repository files
 
 ```text
 electron-gas-monte-carlo/
 ├── README.md
+├── LICENSE
 ├── requirements.txt
-├── ehe_mc_transport_generalized.py
-├── electron_transport_control_generalized.ipynb
-├── figures/
-│   └── example_trajectory.png
-└── data/
-    └── README.md
+├── electron_mc_transport.py
+├── electron_gas_transport.ipynb
+└── electron_trajectory.png
 ```
 
-The `data/` folder is not required to contain cross-section files in the public repository. See the note about data below.
+### Main files
+
+| File | Purpose |
+|---|---|
+| `electron_mc_transport.py` | Main Monte Carlo transport module |
+| `electron_gas_transport.ipynb` | Jupyter notebook for running and plotting simulations |
+| `requirements.txt` | Python package requirements |
+| `electron_trajectory.png` | Example trajectory plot |
+| `LICENSE` | Code license |
 
 ---
 
@@ -48,11 +57,11 @@ The `data/` folder is not required to contain cross-section files in the public 
 Clone the repository:
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/electron-gas-monte-carlo.git
+git clone https://github.com/moaks1/electron-gas-monte-carlo.git
 cd electron-gas-monte-carlo
 ```
 
-Create and activate a conda environment:
+Create a conda environment:
 
 ```bash
 conda create -n electron-mc python=3.11
@@ -74,14 +83,22 @@ jupyter lab
 Then open:
 
 ```text
-electron_transport_control_generalized.ipynb
+electron_gas_transport.ipynb
 ```
 
 ---
 
 ## Cross-section data
 
-This code expects LXCat-style electron collision cross-section data. A typical file contains blocks such as:
+This code expects LXCat-style electron collision cross-section files. The notebook currently expects a local file named:
+
+```text
+eHexsec.txt
+```
+
+The file is intentionally not included in the repository unless redistribution is explicitly allowed by the data source.
+
+A typical LXCat-style file contains blocks such as:
 
 ```text
 ELASTIC
@@ -90,38 +107,37 @@ IONIZATION
 ATTACHMENT
 ```
 
-with energy in eV and cross section in square meters.
+with electron energy in eV and microscopic cross section in square meters.
 
-Cross-section files are not included in this repository by default. Many LXCat datasets have their own citation and redistribution requirements, so it is better to download the data directly from the source and cite it properly.
-
-For example, place your downloaded file in the repository folder and set:
+In the notebook, the data file is selected here:
 
 ```python
 CROSS_SECTION_FILE = "eHexsec.txt"
+MATERIAL_NAME = "helium gas"
+TARGET_NAME = "He"
+NUMBER_DENSITY_M3 = 2.5e26
 ```
 
-inside the notebook.
+To use another gas, replace the cross-section file and target name.
 
 ---
 
-## Basic usage
-
-Load a single gas target:
+## Basic usage from Python
 
 ```python
 import numpy as np
-import ehe_mc_transport_generalized as ehe
+import electron_mc_transport as emc
 
 np.random.seed(1)
 
-material = ehe.load_lxcat_material(
+material = emc.load_lxcat_material(
     "eHexsec.txt",
     material_name="helium gas",
     target_name="He",
     number_density_m3=2.5e26,
 )
 
-electron = ehe.ElectronParticle(
+electron = emc.ElectronParticle(
     energy_eV=100.0,
     material=material,
     idx=0,
@@ -137,118 +153,137 @@ print(event)
 
 ## Gas mixture example
 
-If cross-section data are available for each gas species, the code can also model a gas mixture.
+The code can model gas mixtures if compatible cross-section data are available for each species.
 
 ```python
-import ehe_mc_transport_generalized as ehe
+import electron_mc_transport as emc
 
 n_total = 2.5e26
 
-n2_processes = ehe.load_lxcat_table("N2_xsecs.txt", target_name="N2")
-o2_processes = ehe.load_lxcat_table("O2_xsecs.txt", target_name="O2")
-ar_processes = ehe.load_lxcat_table("Ar_xsecs.txt", target_name="Ar")
+n2_processes = emc.load_lxcat_table("N2_xsecs.txt", target_name="N2")
+o2_processes = emc.load_lxcat_table("O2_xsecs.txt", target_name="O2")
+ar_processes = emc.load_lxcat_table("Ar_xsecs.txt", target_name="Ar")
 
-air = ehe.make_gas_mixture("air", [
+air = emc.make_gas_mixture("air", [
     ["N2", 0.78 * n_total, n2_processes],
     ["O2", 0.21 * n_total, o2_processes],
     ["Ar", 0.01 * n_total, ar_processes],
 ])
 
-electron = ehe.ElectronParticle(
+electron = emc.ElectronParticle(
     energy_eV=100.0,
     material=air,
     idx=0,
 )
 ```
 
-For a mixture, the total macroscopic cross section is
+For a gas mixture, the total macroscopic cross section is
 
 ```text
 Sigma_total(E) = sum_i n_i sigma_i(E)
 ```
 
-where `n_i` is the number density of species `i`, and `sigma_i(E)` is the microscopic cross section.
+where `n_i` is the number density of species `i`, and `sigma_i(E)` is the microscopic cross section for that species.
 
 ---
 
-## Physics model
+## Monte Carlo method
 
-This is a direct, event-based Monte Carlo model. During each update:
+This code uses a null-collision Monte Carlo method.
 
-1. The code evaluates the total macroscopic cross section at the current electron energy.
-2. A collision time is sampled using a null-collision method.
-3. The electron moves in a straight line during the sampled time step.
-4. A collision process is sampled from the available cross sections.
-5. The electron energy and direction are updated.
-6. If ionization occurs, a secondary electron may be created.
+At a given electron energy, the real collision frequency is approximately
 
-The code currently assumes:
+```text
+nu_real(E) = Sigma_total(E) v(E)
+```
 
-- no external electric or magnetic fields
-- straight-line motion between collisions
-- isotropic post-collision scattering
-- nonrelativistic electron speed
-- tabulated cross sections as the source of collision probabilities
+where `Sigma_total(E)` is the total macroscopic cross section and `v(E)` is the electron speed.
+
+The code samples candidate collision events using a larger trial frequency,
+
+```text
+nu_candidate(E) = 2 Sigma_total(E) v(E)
+```
+
+so that some sampled events are physical collisions and some are null collisions. With the current factor of 2, about half of the sampled candidate events are null events.
+
+For a physical process `j`, the event probability is proportional to its macroscopic cross section:
+
+```text
+P_j(E) = Sigma_j(E) / [2 Sigma_total(E)]
+```
+
+The remaining probability is treated as a null event.
 
 ---
 
-## Limitations
+## Current physics assumptions
 
-This is a research/educational prototype, not a full production electron transport code.
+The current model assumes:
 
-Current limitations include:
+- nonrelativistic electron speeds
+- straight-line motion between candidate collisions
+- isotropic scattering after collisions
+- tabulated cross sections determine collision probabilities
+- excitation removes a fixed threshold energy
+- ionization removes the ionization threshold and randomly splits leftover kinetic energy
+- no external electric field
+- no magnetic field
+- no solid-material condensed-history model
+- no physical geometry boundary or escape condition
 
-- no electric-field acceleration
-- no magnetic-field motion
-- no differential angular cross sections
-- no detailed secondary-electron energy spectrum
-- no elastic energy loss to the target atom or molecule
-- no condensed-matter or solid-state transport model
-- no boundary geometry other than free particle histories
+The code is therefore best described as:
 
-The code is best described as:
+> A 3D null-collision Monte Carlo electron transport prototype for gas targets.
 
-> Monte Carlo electron transport in gas targets using LXCat-style collision cross-section data.
-
-It should not be described as a general-purpose solid-material electron transport code.
+It should not be described as a full solid-material electron transport code.
 
 ---
 
 ## Validation ideas
 
-Good validation checks include:
+Suggested validation checks:
 
-1. Plot the loaded cross sections and compare them with the source data.
-2. At fixed energy, verify that sampled collision types match the expected cross-section ratios.
-3. Check that sampled free paths follow the expected exponential distribution.
-4. Check that excitation removes the correct threshold energy.
-5. Check that ionization conserves leftover kinetic energy after subtracting the ionization threshold.
-6. For future electric-field versions, compare swarm quantities such as mean energy or drift velocity against Boltzmann or swarm-code results.
+1. Plot the loaded cross sections and compare them with the original data table.
+2. At fixed electron energy, verify that sampled process frequencies follow the expected cross-section ratios.
+3. Check that sampled free paths follow the expected exponential behavior.
+4. Verify that excitation subtracts the correct threshold energy.
+5. Verify that ionization conserves leftover kinetic energy after subtracting the ionization threshold.
+6. Run repeated histories and compare average trends such as energy loss, collision counts, and secondary-electron production.
+7. For future electric-field versions, compare swarm quantities such as mean energy or drift velocity against Boltzmann or swarm-code results.
 
 ---
 
-## Example output
+## Limitations and future work
 
-The notebook can generate a 2D projection of the electron trajectory, showing the primary electron and any secondary electrons created through ionization.
+Possible future additions:
 
-Suggested figure location:
+- external electric-field acceleration
+- 3D geometry boundaries and escape conditions
+- differential angular scattering
+- more physical ionization secondary-energy distributions
+- elastic energy loss to the target atom or molecule
+- ensemble statistics over many primary electrons
+- comparison against Boltzmann or swarm-code benchmarks
+- optional 3D trajectory plotting
+- cleaner command-line interface
+
+---
+
+## Data citation
+
+If LXCat data are used, cite the database according to the downloaded file's recommended citation format.
+
+For the helium example used during development, the downloaded file identified the source as:
 
 ```text
-figures/example_trajectory.png
+Biagi-v7.1 database, www.lxcat.net, retrieved on May 11, 2026
 ```
+
+The code license does not automatically apply to downloaded cross-section data. Keep the data source, citation, and redistribution terms separate from the software license.
 
 ---
 
 ## License
 
-Choose a license before making the repository public. The MIT License is a common choice for a small educational code project.
-
-Do not assume that downloaded cross-section data can be redistributed under the same license as your code. Keep the code license and the data citation/usage terms separate.
-
----
-
-## Suggested citation
-
-If you use LXCat or another database for electron collision cross sections, cite the database according to the source's recommended citation format.
-
-You can also add a `CITATION.cff` file later if you want people to cite this GitHub repository directly.
+This project is released under the MIT License. See `LICENSE` for details.
