@@ -1,6 +1,6 @@
 # Electron Gas Monte Carlo
 
-A small, readable **3D null-collision Monte Carlo electron transport code** for gas targets using LXCat-style electron collision cross-section data.
+A **3D null-collision Monte Carlo electron transport code** for gas targets using LXCat-style electron collision cross-section data.
 
 The code follows electron histories through a gas medium, samples candidate collision events, accepts physical collision channels based on tabulated cross sections, and creates secondary electrons during ionization events. It is intended as an educational/research prototype rather than a production electron transport code.
 
